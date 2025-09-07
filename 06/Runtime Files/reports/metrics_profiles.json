@@ -1,0 +1,83 @@
+{
+  "profiles": {
+    "bm25": {
+      "calls": 5,
+      "latency_ms_avg": 0.07233619689941406,
+      "latency_ms_p95": 0.08730888366699219,
+      "cpu_delta_avg": 0.0,
+      "mem_delta_mb_avg": 0.0,
+      "gpu_util_avg": 0.0,
+      "accuracy_proxy": 1.0
+    },
+    "tfidf": {
+      "calls": 5,
+      "latency_ms_avg": 0.05850791931152344,
+      "latency_ms_p95": 0.08563995361328125,
+      "cpu_delta_avg": 0.0,
+      "mem_delta_mb_avg": 0.0,
+      "gpu_util_avg": 0.0,
+      "accuracy_proxy": 1.0
+    },
+    "hybrid": {
+      "calls": 5,
+      "latency_ms_avg": 0.17299652099609375,
+      "latency_ms_p95": 0.21224021911621094,
+      "cpu_delta_avg": 0.0,
+      "mem_delta_mb_avg": 0.0,
+      "gpu_util_avg": 0.0,
+      "accuracy_proxy": 1.0
+    }
+  },
+  "metrics": {
+    "retriever": [
+      "bm25",
+      "tfidf",
+      "hybrid"
+    ],
+    "latency_ms_avg": [
+      0.07233619689941406,
+      0.05850791931152344,
+      0.17299652099609375
+    ],
+    "latency_ms_p95": [
+      0.08730888366699219,
+      0.08563995361328125,
+      0.21224021911621094
+    ],
+    "cpu_delta_avg": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "mem_delta_mb_avg": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "gpu_util_avg": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "accuracy_proxy": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "precision": [
+      0.3333333333333333,
+      0.3333333333333333,
+      0.3333333333333333
+    ],
+    "recall": [
+      0.3,
+      0.3,
+      0.3
+    ],
+    "mrr": [
+      0.4,
+      0.4,
+      0.4
+    ]
+  }
+}

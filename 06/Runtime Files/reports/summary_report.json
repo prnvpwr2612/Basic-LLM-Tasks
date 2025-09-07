@@ -1,0 +1,170 @@
+{
+  "generated_at": "2025-09-07T23:21:12.738530",
+  "profiles_summary": {
+    "bm25": {
+      "calls": 5,
+      "latency_ms_avg": 0.07233619689941406,
+      "latency_ms_p95": 0.08730888366699219,
+      "cpu_delta_avg": 0.0,
+      "mem_delta_mb_avg": 0.0,
+      "gpu_util_avg": 0.0,
+      "accuracy_proxy": 1.0
+    },
+    "tfidf": {
+      "calls": 5,
+      "latency_ms_avg": 0.05850791931152344,
+      "latency_ms_p95": 0.08563995361328125,
+      "cpu_delta_avg": 0.0,
+      "mem_delta_mb_avg": 0.0,
+      "gpu_util_avg": 0.0,
+      "accuracy_proxy": 1.0
+    },
+    "hybrid": {
+      "calls": 5,
+      "latency_ms_avg": 0.17299652099609375,
+      "latency_ms_p95": 0.21224021911621094,
+      "cpu_delta_avg": 0.0,
+      "mem_delta_mb_avg": 0.0,
+      "gpu_util_avg": 0.0,
+      "accuracy_proxy": 1.0
+    }
+  },
+  "scale_results": [
+    {
+      "scale_factor": 1,
+      "docs": 8,
+      "total_time_ms": 0.31185150146484375,
+      "avg_time_per_query_ms": 0.031185150146484375
+    },
+    {
+      "scale_factor": 2,
+      "docs": 16,
+      "total_time_ms": 0.4451274871826172,
+      "avg_time_per_query_ms": 0.04451274871826172
+    },
+    {
+      "scale_factor": 4,
+      "docs": 32,
+      "total_time_ms": 0.7755756378173828,
+      "avg_time_per_query_ms": 0.07755756378173828
+    }
+  ],
+  "domain_summary": {
+    "bm25": {
+      "technical": {
+        "coverage": 1.0,
+        "count": 2
+      },
+      "legal": {
+        "coverage": 1.0,
+        "count": 1
+      },
+      "medical": {
+        "coverage": 1.0,
+        "count": 1
+      },
+      "general": {
+        "coverage": 1.0,
+        "count": 1
+      }
+    },
+    "tfidf": {
+      "technical": {
+        "coverage": 1.0,
+        "count": 2
+      },
+      "legal": {
+        "coverage": 1.0,
+        "count": 1
+      },
+      "medical": {
+        "coverage": 1.0,
+        "count": 1
+      },
+      "general": {
+        "coverage": 1.0,
+        "count": 1
+      }
+    },
+    "hybrid": {
+      "technical": {
+        "coverage": 1.0,
+        "count": 2
+      },
+      "legal": {
+        "coverage": 1.0,
+        "count": 1
+      },
+      "medical": {
+        "coverage": 1.0,
+        "count": 1
+      },
+      "general": {
+        "coverage": 1.0,
+        "count": 1
+      }
+    }
+  },
+  "metrics": {
+    "retriever": [
+      "bm25",
+      "tfidf",
+      "hybrid"
+    ],
+    "latency_ms_avg": [
+      0.07233619689941406,
+      0.05850791931152344,
+      0.17299652099609375
+    ],
+    "latency_ms_p95": [
+      0.08730888366699219,
+      0.08563995361328125,
+      0.21224021911621094
+    ],
+    "cpu_delta_avg": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "mem_delta_mb_avg": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "gpu_util_avg": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "accuracy_proxy": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "precision": [
+      0.3333333333333333,
+      0.3333333333333333,
+      0.3333333333333333
+    ],
+    "recall": [
+      0.3,
+      0.3,
+      0.3
+    ],
+    "mrr": [
+      0.4,
+      0.4,
+      0.4
+    ]
+  },
+  "artifacts": {
+    "dashboard": "reports/dashboard.html",
+    "latency_overview": "figures/latency_overview.html",
+    "resource_utilization": "figures/resource_utilization.html",
+    "performance_radar": "figures/performance_radar.html",
+    "scalability_curve": "figures/scalability_curve.html",
+    "domain_coverage": "figures/domain_coverage.html",
+    "query_coverage": "figures/query_coverage.html",
+    "architecture": "figures/architecture.html"
+  }
+}
