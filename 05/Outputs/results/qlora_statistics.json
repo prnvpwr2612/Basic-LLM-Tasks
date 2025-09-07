@@ -1,0 +1,11 @@
+{
+  "quantization_config": "optimized_4bit",
+  "base_model": "microsoft/Phi-3-mini-4k-instruct",
+  "total_parameters": 2026966016,
+  "trainable_parameters": 17825792,
+  "trainable_percentage": 0.8794322084973722,
+  "quantized_memory_gb": 4.516214847564697,
+  "qlora_overhead_gb": 0.0269775390625,
+  "total_memory_gb": 4.543192386627197,
+  "memory_savings_vs_full": -26.199788517422146
+}

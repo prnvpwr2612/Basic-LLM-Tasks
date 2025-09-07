@@ -1,0 +1,5 @@
+{
+  "avg_response_length": 42.0,
+  "evaluation_status": "error_demo",
+  "error": "'DynamicCache' object has no attribute 'get_max_length'"
+}

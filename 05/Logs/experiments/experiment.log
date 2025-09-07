@@ -1,0 +1,22 @@
+2025-09-07 18:54:00,459 | experiment | INFO | 🧪 Phase 1 setup initiated
+2025-09-07 18:54:23,646 | experiment | INFO | 🧪 Phase 1 completed successfully
+2025-09-07 18:59:17,137 | experiment | INFO | 🧪 Phase 2 initiated - Model research beginning
+2025-09-07 19:01:10,033 | experiment | INFO | 🧪 Model selected: microsoft/Phi-3-mini-4k-instruct
+2025-09-07 19:04:03,927 | experiment | INFO | 🧪 Phase 2 completed successfully
+2025-09-07 19:07:52,250 | experiment | INFO | 🧪 Phase 3 initiated - LoRA architecture design beginning
+2025-09-07 19:12:18,157 | experiment | INFO | 🧪 LoRA model loaded successfully
+2025-09-07 19:17:40,629 | experiment | ERROR | 🧪 Phase 3 validation failed
+2025-09-07 19:22:35,171 | experiment | INFO | 🧪 Phase 3 completed successfully (fixed)
+2025-09-07 19:23:06,307 | experiment | INFO | 🧪 Phase 4 initiated - QLoRA quantization beginning
+2025-09-07 19:23:29,153 | experiment | INFO | 🧪 QLoRA model loaded successfully
+2025-09-07 19:29:27,750 | experiment | ERROR | 🧪 Phase 4 validation failed
+2025-09-07 19:32:54,947 | experiment | INFO | 🧪 Phase 4 completed successfully (fixed)
+2025-09-07 19:33:13,785 | experiment | INFO | 🧪 Phase 5 initiated - Training pipeline architecture beginning
+2025-09-07 19:38:20,868 | experiment | ERROR | 🧪 Phase 5 validation failed
+2025-09-07 19:46:45,014 | experiment | INFO | 🧪 Phase 5 completed successfully (fixed)
+2025-09-07 19:47:02,922 | experiment | INFO | 🧪 Phase 6 initiated - Model evaluation framework beginning
+2025-09-07 21:06:55,675 | experiment | INFO | 🧪 Phase 5 completed successfully
+2025-09-07 21:13:31,038 | experiment | INFO | 🧪 Phase 6 initiated - Model evaluation beginning
+2025-09-07 21:13:31,048 | experiment | INFO | 🧪 Phase 6 completed successfully
+2025-09-07 21:25:46,521 | experiment | INFO | 🧪 Phase 7 initiated - Visualization and documentation beginning
+2025-09-07 21:25:47,956 | experiment | INFO | 🧪 Phase 7 completed successfully

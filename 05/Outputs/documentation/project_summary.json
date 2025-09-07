@@ -1,0 +1,34 @@
+{
+  "project_title": "Fine-Tuning Open Source LLM with LoRA and QLoRA Techniques",
+  "completion_date": "2025-09-07T21:25:47.955408",
+  "environment": "Kaggle T4v2 GPU",
+  "model_used": "microsoft/Phi-3-mini-4k-instruct",
+  "dataset": "yahma/alpaca-cleaned",
+  "methodology": "QLoRA with 4-bit quantization",
+  "key_achievements": {
+    "memory_efficiency": "75% reduction vs full precision",
+    "trainable_parameters": "17.8M out of 2.0B (0.88%)",
+    "training_loss": 2.85,
+    "validation_loss": 2.78,
+    "gpu_memory_usage": "4.6GB / 14.7GB (31.4%)"
+  },
+  "technical_specifications": {
+    "quantization": "4-bit NF4 with double quantization",
+    "lora_rank": 32,
+    "lora_alpha": 64,
+    "lora_dropout": 0.1,
+    "optimizer": "paged_adamw_8bit",
+    "learning_rate": 0.0001,
+    "batch_size": 1,
+    "gradient_accumulation": 8
+  },
+  "phases_completed": [
+    "Phase 1: Environment Setup \u2705",
+    "Phase 2: Model & Dataset Selection \u2705",
+    "Phase 3: LoRA Implementation \u2705",
+    "Phase 4: QLoRA Implementation \u2705",
+    "Phase 5: Training Pipeline \u2705",
+    "Phase 6: Model Evaluation \u2705",
+    "Phase 7: Visualization & Documentation \u2705"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "quantization_config": "optimized_4bit",
+  "model_name": "microsoft/Phi-3-mini-4k-instruct",
+  "quantization_type": "4-bit NF4",
+  "double_quantization": true,
+  "compute_dtype": "torch.bfloat16",
+  "trainable_parameters": 17825792,
+  "trainable_percentage": 0.8794322084973722,
+  "memory_usage_gb": 4.543192386627197,
+  "training_ready": true,
+  "optimization_applied": true
+}

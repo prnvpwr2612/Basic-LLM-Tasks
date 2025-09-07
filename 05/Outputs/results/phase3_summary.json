@@ -1,0 +1,21 @@
+{
+  "lora_configuration": "maximum",
+  "model_name": "microsoft/Phi-3-mini-4k-instruct",
+  "rank": 64,
+  "alpha": 128,
+  "dropout": 0.15,
+  "target_modules": [
+    "gate_proj",
+    "q_proj",
+    "down_proj",
+    "o_proj",
+    "k_proj",
+    "v_proj",
+    "up_proj"
+  ],
+  "trainable_parameters": 35651584,
+  "trainable_percentage": 0.9243989986031529,
+  "memory_usage_gb": 3.6251840591430664,
+  "training_ready": true,
+  "optimization_score": 89.999948046875
+}

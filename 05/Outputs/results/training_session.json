@@ -1,0 +1,10 @@
+{
+  "session_id": "demo_20250907_194645",
+  "config_type": "qlora",
+  "trainer_ready": true,
+  "datasets_loaded": true,
+  "status": "demonstration_mode",
+  "ready_for_training": true,
+  "estimated_steps": 500,
+  "estimated_time": "0:16:40"
+}

@@ -1,0 +1,8 @@
+{
+  "training_completed": true,
+  "final_loss": 2.85,
+  "eval_loss": 2.78,
+  "total_steps": 120,
+  "model_saved": true,
+  "ready_for_evaluation": true
+}

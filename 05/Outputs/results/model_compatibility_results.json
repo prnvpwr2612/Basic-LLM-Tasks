@@ -1,0 +1,12 @@
+{
+  "microsoft/Phi-3-mini-4k-instruct": {
+    "model_name": "microsoft/Phi-3-mini-4k-instruct",
+    "timestamp": "2025-09-07T18:59:45.727745",
+    "load_success": true,
+    "tokenizer_success": true,
+    "memory_usage_gb": 3.55877685546875,
+    "quantized_load_success": true,
+    "quantized_memory_gb": 2.1090002059936523,
+    "errors": []
+  }
+}
