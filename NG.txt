@@ -1,0 +1,397 @@
+Experiment 08:
+import os
+import requests
+import zipfile
+from PIL import Image
+import torch
+from torch.utils.data import Dataset, DataLoader
+from torchvision import transforms
+from transformers import ViTFeatureExtractor, GPT2Tokenizer, GPT2LMHeadModel, ViTModel
+from torch.optim import AdamW
+from nltk.translate.bleu_score import corpus_bleu
+from tqdm import tqdm
+import numpy as np
+import matplotlib.pyplot as plt
+from gtts import gTTS
+from IPython.display import Audio, display
+def download_and_extract_flickr8k():
+ dataset_dir = 'flickr8k'
+ if not os.path.exists(dataset_dir):
+ print("Downloading Flickr8k dataset...")
+ images_url =
+"https://github.com/jbrownlee/Datasets/releases/download/Flickr8k/Flickr8k_Dataset.zip"
+ r = requests.get(images_url, stream=True)
+ with open("Flickr8k_Dataset.zip", "wb") as f:
+ for chunk in r.iter_content(chunk_size=1024):
+ if chunk:
+ f.write(chunk)
+ with zipfile.ZipFile("Flickr8k_Dataset.zip", 'r') as zip_ref:
+ zip_ref.extractall(dataset_dir)
+ os.remove("Flickr8k_Dataset.zip")
+ captions_url = "https://github.com/jbrownlee/Datasets/releases/download/Flickr8k/Flickr8k_text.zip"
+ r = requests.get(captions_url, stream=True)
+ with open("Flickr8k_text.zip", "wb") as f:
+ for chunk in r.iter_content(chunk_size=1024):
+ if chunk:
+ f.write(chunk)
+ with zipfile.ZipFile("Flickr8k_text.zip", 'r') as zip_ref:
+ zip_ref.extractall(dataset_dir)
+ os.remove("Flickr8k_text.zip")
+ print("Flickr8k dataset downloaded and extracted successfully.")
+ else:
+ print("Flickr8k dataset already exists.")
+download_and_extract_flickr8k()
+IMAGE_DIR = 'flickr8k/Flicker8k_Dataset'
+CAPTION_FILE = 'flickr8k/Flickr8k.token.txt'
+def load_captions(filename):
+ captions = {}
+ with open(filename, 'r') as f:
+ for line in f:
+ tokens = line.split()
+ image_id, caption = tokens[0].split('#')[0], tokens[1:]
+ caption = " ".join(caption)
+ if image_id not in captions:
+ captions[image_id] = []
+ captions[image_id].append(caption)
+ return captions
+captions_dict = load_captions(CAPTION_FILE)
+image_files = list(captions_dict.keys())
+image_caption_pairs = []
+for image_id, captions in captions_dict.items():
+ for caption in captions:
+ image_caption_pairs.append((os.path.join(IMAGE_DIR, image_id), caption))
+train_size = int(0.8 * len(image_caption_pairs))
+train_pairs = image_caption_pairs[:train_size]
+class ImageCaptioningDataset(Dataset):
+ def __init__(self, image_caption_pairs, feature_extractor, tokenizer, max_length=50):
+ self.image_caption_pairs = image_caption_pairs
+ self.feature_extractor = feature_extractor
+ self.tokenizer = tokenizer
+ self.max_length = max_length
+ def __len__(self):
+ return len(self.image_caption_pairs)
+ def __getitem__(self, idx):
+ image_path, caption = self.image_caption_pairs[idx]
+ try:
+ image = Image.open(image_path).convert("RGB")
+ except (IOError, OSError):
+ print(f"Warning: Could not load image {image_path}. Using a fallback image.")
+ # Use the first image of the dataset as a fallback
+ image_path, caption = self.image_caption_pairs[0]
+ image = Image.open(image_path).convert("RGB")
+ pixel_values = self.feature_extractor(images=image, return_tensors="pt").pixel_values.squeeze(0)
+ inputs = self.tokenizer(
+ caption, return_tensors="pt", max_length=self.max_length,
+ padding="max_length", truncation=True
+ )
+ input_ids = inputs.input_ids.squeeze(0)
+ attention_mask = inputs.attention_mask.squeeze(0)
+ return {"pixel_values": pixel_values, "input_ids": input_ids, "attention_mask": attention_mask}
+feature_extractor = ViTFeatureExtractor.from_pretrained('google/vit-base-patch16-224-in21k')
+tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
+tokenizer.pad_token = tokenizer.eos_token
+class MultimodalCaptioningModel(torch.nn.Module):
+ def __init__(self):
+ super(MultimodalCaptioningModel, self).__init__()
+ self.vision_encoder = ViTModel.from_pretrained('google/vit-base-patch16-224-in21k')
+ for param in self.vision_encoder.parameters():
+ param.requires_grad = False
+ self.language_model = GPT2LMHeadModel.from_pretrained('gpt2')
+ self.vision_projection = torch.nn.Linear(self.vision_encoder.config.hidden_size,
+self.language_model.config.hidden_size)
+ def forward(self, pixel_values, input_ids, attention_mask):
+ with torch.no_grad():
+ image_features = self.vision_encoder(pixel_values).last_hidden_state[:, 0, :]
+ projected_image_features = self.vision_projection(image_features)
+ text_embeddings = self.language_model.transformer.wte(input_ids)
+ projected_image_features_expanded = projected_image_features.unsqueeze(1)
+ combined_embeddings = torch.cat([projected_image_features_expanded, text_embeddings], dim=1)
+ image_attention_mask = torch.ones(projected_image_features_expanded.size(0), 1,
+dtype=torch.long).to(attention_mask.device)
+ combined_attention_mask = torch.cat([image_attention_mask, attention_mask], dim=1)
+ image_labels = torch.full((projected_image_features.size(0), 1), -100,
+dtype=torch.long).to(input_ids.device)
+ combined_labels = torch.cat([image_labels, input_ids], dim=1)
+ outputs = self.language_model(
+ inputs_embeds=combined_embeddings, attention_mask=combined_attention_mask,
+labels=combined_labels
+ )
+ return outputs
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model = MultimodalCaptioningModel().to(device)
+optimizer = AdamW(model.language_model.parameters(), lr=5e-5)
+def train_model(model, data_loader, optimizer, device, num_epochs=1):
+ model.train()
+ for epoch in range(num_epochs):
+ print(f"Epoch {epoch+1}/{num_epochs}")
+ for batch in tqdm(data_loader):
+ pixel_values, input_ids, attention_mask = (batch["pixel_values"].to(device),
+ batch["input_ids"].to(device),
+batch["attention_mask"].to(device))
+ optimizer.zero_grad()
+ outputs = model(pixel_values, input_ids, attention_mask)
+ loss = outputs.loss
+ loss.backward()
+ optimizer.step()
+ print(f"Finished training.")
+subset_train_pairs = train_pairs[:200]
+subset_train_dataset = ImageCaptioningDataset(subset_train_pairs, feature_extractor, tokenizer)
+subset_train_loader = DataLoader(subset_train_dataset, batch_size=8, shuffle=True)
+print("\nStarting model training (this is a quick demo)...")
+train_model(model, subset_train_loader, optimizer, device, num_epochs=1)
+def generate_caption_for_image(model, image_path, feature_extractor, tokenizer, device, max_length=50):
+ """Generates a caption for a given image using the trained model."""
+ model.eval() # Ensure the model is in evaluation mode
+ try:
+ image = Image.open(image_path).convert("RGB")
+ except (IOError, OSError):
+ print(f"Error: Could not load image at {image_path}.")
+ return "Could not generate a caption because the image could not be loaded."
+ pixel_values = feature_extractor(images=image, return_tensors="pt").pixel_values.to(device)
+ with torch.no_grad():
+ # Get image embeddings from the vision encoder and project them
+ image_features = model.vision_encoder(pixel_values).last_hidden_state[:, 0, :]
+ projected_image_features = model.vision_projection(image_features)
+ inputs_embeds = projected_image_features.unsqueeze(1)
+ # Use the language model's generate method to create the caption
+ output_sequences = model.language_model.generate(
+ inputs_embeds=inputs_embeds,
+ max_length=max_length,
+ num_beams=5, # Use beam search for higher quality results
+ no_repeat_ngram_size=2,
+ early_stopping=True,
+ pad_token_id=tokenizer.eos_token_id
+ )
+ generated_caption = tokenizer.decode(output_sequences[0], skip_special_tokens=True)
+ return generated_caption.strip()
+def process_and_generate_multimodal_output(model, image_path, text_query):
+ """
+ Takes an image and a query, generates a caption, and produces audio and text outputs.
+ """
+ print("\n" + "="*50)
+ print("Generating Response...")
+ print("="*50)
+ print(f"Received query: '{text_query}'. Generating description for the image...")
+ generated_caption = generate_caption_for_image(model, image_path, feature_extractor, tokenizer,
+device)
+ if not generated_caption:
+ generated_caption = "Sorry, I could not generate a description for this image."
+ print(f"\nModel Generated Caption: {generated_caption}")
+ print("\n1. Creating Brief Audio Output...")
+ tts = gTTS(text=generated_caption, lang='en')
+ audio_file_path = "generated_audio_description.mp3"
+ tts.save(audio_file_path)
+ print(f"Audio saved to {audio_file_path}. Playing now:")
+ display(Audio(audio_file_path, autoplay=True))
+ print("\n2. Displaying Detailed Text and Visual Reply...")
+ img = Image.open(image_path)
+ plt.imshow(img)
+ plt.title("Your Uploaded Image")
+ plt.axis('off')
+ plt.show()
+ print("\n--- Detailed Text Description ---")
+ print(generated_caption)
+print("\n" + "="*50)
+print("INTERACTIVE MULTIMODAL APPLICATION")
+print("="*50)
+print("Please upload an image file (jpg, png, etc.).")
+uploaded = files.upload()
+if not uploaded:
+ print("\nNo file uploaded. Please run the cell again to try again.")
+else:
+ uploaded_image_path = next(iter(uploaded))
+ print(f"\nSuccessfully uploaded '{uploaded_image_path}'.")
+ print("\n" + "-"*50)
+ user_text_query = input("Please enter your text query (e.g., 'describe image'): ")
+ process_and_generate_multimodal_output(model, uploaded_image_path, user_text_query)
+ print("\n" + "="*50)
+ print("LONG AND DETAILED TEXT OUTPUT: EXPERIMENT SUMMARY")
+ print("="*50)
+ print("This script demonstrates a complete multimodal application pipeline that responds to user inputs.")
+ print("Key steps included:")
+ print("1. **Setup & Training:** A multimodal model was trained on the Flickr8k dataset, learning to
+connect visual information from images (using a ViT) with textual descriptions (using GPT-2).")
+ print("2. **User Input:** The application prompted you to provide two inputs:")
+ print(" - An image file from your computer.")
+ print(" - A text query like 'describe image'.")
+ print("3. **Core Logic (Image Captioning):** Upon receiving the inputs, the script fed your image into
+the trained model to **generate a new, relevant text description**.")
+ print("4. **Output Generation:** This model-generated description was then used to produce your
+desired outputs:")
+ print(" - **Brief Audio:** The generated text was converted into a playable MP3 audio file.")
+ print(" - **Detailed Text Reply:** The uploaded image was displayed alongside the full generated text
+description.")
+ print("\n**How it Achieved Your Goal:**")
+ print("The corrected application now correctly interprets your request. Instead of just echoing your input,
+it leverages its underlying AI model to analyze the image and create a descriptive caption, which then forms
+the basis for both the audio and text outputs, fulfilling the multimodal requirement.")
+
+Eperiment 07:
+%pip install -q -U langchain faiss-cpu huggingface-hub sentence-transformers pypdf
+langchain-google-genai
+%pip install -q -U langchain-community
+from langchain.document_loaders import TextLoader, PyPDFLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+import os
+loader = PyPDFLoader("/content/Vidgyan.pdf")
+documents = loader.load()
+text_splitter = RecursiveCharacterTextSplitter(
+ chunk_size=1000,
+ chunk_overlap=200
+)
+docs = text_splitter.split_documents(documents)
+print(f"Number of document chunks: {len(docs)}")
+print(f"First chunk content:\n{docs[0].page_content}")
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import FAISS
+model_name = "sentence-transformers/all-MiniLM-L6-v2"
+embeddings = HuggingFaceEmbeddings(model_name=model_name)
+print("Local Hugging Face Embedder initialized.")
+db = FAISS.from_documents(docs, embeddings)
+print("FAISS vector store created successfully.")
+from langchain_google_genai import GoogleGenerativeAI
+from langchain.chains import RetrievalQA
+import os
+from google.colab import userdata
+google_api_key = userdata.get('GOOGLE_API_KEY')
+if not google_api_key:
+ raise ValueError("GOOGLE_API_KEY not found. Please set it as an environment variable or replace
+'os.getenv(\"GOOGLE_API_KEY\")' with your actual API key.")
+llm = GoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=google_api_key, temperature=0.0)
+print("Gemini LLM initialized.")
+qa_chain = RetrievalQA.from_chain_type(
+ llm=llm,
+ chain_type="stuff",
+ retriever=db.as_retriever(),
+ return_source_documents=True
+)
+print("RetrievalQA chain created.")
+def ask_question(question_text):
+ print(f"\nQuestion: {question_text}\n\n")
+ response = qa_chain({"query": question_text})
+ print(f"LLM Answer: \n{response['result']}\n\n")
+ print(f"RAG Answer: \n{llm.invoke(question_text)}\n\n")
+ return response
+ask_question("Explain what problem this paper solves, how the architecture is optimized for the same, and
+what the future scope is.")
+
+Experiment 03:
+!pip install transformers[torch] datasets evaluate scikit-learn
+import torch
+import numpy as np
+import evaluate
+from datasets import load_dataset
+from transformers import (
+ AutoTokenizer,
+ AutoModelForSequenceClassification,
+ TrainingArguments,
+ Trainer,
+)
+print("Loading the IMDB dataset...")
+imdb_dataset = load_dataset("imdb")
+small_train_dataset = imdb_dataset["train"].shuffle(seed=42).select(range(2000))
+small_test_dataset = imdb_dataset["test"].shuffle(seed=42).select(range(400))
+print("\nDataset loaded and subset selected:")
+print("Training set size:", len(small_train_dataset))
+Department of Artificial Intelligence (AI) and Data Science
+print("Test set size:", len(small_test_dataset))
+print("Example entry:", small_train_dataset[0])
+model_name = "distilbert-base-uncased"
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+def tokenize_function(examples):
+ return tokenizer(examples["text"], padding="max_length", truncation=True)
+print("\nTokenizing the dataset...")
+tokenized_train_dataset = small_train_dataset.map(tokenize_function, batched=True)
+tokenized_test_dataset = small_test_dataset.map(tokenize_function, batched=True)
+print("Tokenization complete.")
+# Step 5: Prepare Data for Training
+# The `Trainer` API will handle this step automatically, as the data is
+# already in the format it expects after tokenization.
+# Step 6: Load Pre-trained Model
+# Load the DistilBERT model with a sequence classification head.
+# The number of labels for IMDB is 2 (positive/negative).
+print(f"\nLoading pre-trained model '{model_name}'...")
+model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2)
+# Step 7: Define Evaluation Metrics
+print("Defining evaluation metrics...")
+# Load the standard metrics from the `evaluate` library.
+accuracy_metric = evaluate.load("accuracy")
+precision_metric = evaluate.load("precision")
+Department of Artificial Intelligence (AI) and Data Science
+recall_metric = evaluate.load("recall")
+f1_metric = evaluate.load("f1")
+# Create a function to compute metrics from model predictions.
+def compute_metrics(eval_pred):
+ logits, labels = eval_pred
+ # Get the predicted class by finding the index of the highest logit.
+ predictions = np.argmax(logits, axis=-1)
+ # Calculate each metric.
+ accuracy = accuracy_metric.compute(predictions=predictions, references=labels)["accuracy"]
+ precision = precision_metric.compute(predictions=predictions, references=labels)["precision"]
+ recall = recall_metric.compute(predictions=predictions, references=labels)["recall"]
+ f1 = f1_metric.compute(predictions=predictions, references=labels)["f1"]
+ # Return a dictionary of the metrics.
+ return {"accuracy": accuracy, "precision": precision, "recall": recall, "f1": f1}
+# Step 8: Set Training Arguments
+print("Setting training arguments...")
+training_args = TrainingArguments(
+ output_dir="./results_imdb", # Directory to save the model and results.
+ num_train_epochs=3, # Number of complete passes through the training data.
+ per_device_train_batch_size=16, # Batch size per device during training.
+ per_device_eval_batch_size=16, # Batch size for evaluation.
+ warmup_steps=500, # Number of steps for the learning rate warmup.
+ weight_decay=0.01, # Regularization strength.
+Department of Artificial Intelligence (AI) and Data Science
+ logging_dir="./logs_imdb", # Directory for storing logs.
+ logging_steps=10,
+ eval_strategy="epoch", # Run evaluation at the end of each epoch.
+ save_strategy="epoch", # Save a model checkpoint at the end of each epoch.
+ load_best_model_at_end=True, # Load the best performing model at the end of training.
+ optim="adamw_torch_xla" # Explicitly set optimizer to a version compatible with XLA (TPU)
+)
+# Step 9: Initialize Trainer
+print("Initializing Trainer...")
+trainer = Trainer(
+ model=model,
+ args=training_args,
+ train_dataset=tokenized_train_dataset,
+ eval_dataset=tokenized_test_dataset,
+ compute_metrics=compute_metrics,
+)
+# Step 10: Train the Model
+print("\nStarting model training...")
+train_result = trainer.train()
+print("Training complete.")
+# Step 11: Evaluate the Model
+print("\nEvaluating the fine-tuned model on the test set...")
+Department of Artificial Intelligence (AI) and Data Science
+evaluation_results = trainer.evaluate()
+print("\n--- Final Evaluation Metrics ---")
+# Prettily print the evaluation output.
+for metric, value in evaluation_results.items():
+ print(f"{metric}: {value:.4f}")
+# Step 12: Save the Fine-Tuned Model
+output_model_dir = "./fine-tuned-imdb-model"
+print(f"\nSaving the fine-tuned model to {output_model_dir}...")
+trainer.save_model(output_model_dir)
+tokenizer.save_pretrained(output_model_dir)
+print("Model and tokenizer saved successfully.")
+# --- Example of using the saved model for prediction ---
+print("\n--- Using the fine-tuned model for a new prediction ---")
+# Load the saved model and tokenizer
+loaded_model = AutoModelForSequenceClassification.from_pretrained(output_model_dir)
+loaded_tokenizer = AutoTokenizer.from_pretrained(output_model_dir)
+# Define a new text for sentiment analysis
+new_text = "This movie was a fantastic and compelling story. I highly recommend it!"
+# Tokenize the input text
+inputs = loaded_tokenizer(new_text, return_tensors="pt", padding=True, truncation=True)
+Department of Artificial Intelligence (AI) and Data Science
+# Make a prediction
+with torch.no_grad():
+ outputs = loaded_model(**inputs)
+ logits = outputs.logits
+ predicted_class_id = torch.argmax(logits, dim=1).item()
+# The IMDB dataset has labels: 0 for 'negative' and 1 for 'positive'
+labels = ['Negative', 'Positive']
+print(f"\nInput Text: '{new_text}'")
+print(f"Predicted Sentiment: {labels[predicted_class_id]}")

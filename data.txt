@@ -1,0 +1,21 @@
+Rules:
+- Code must be working for a Kaggle CPU Environment!
+- Give me beautiful code without comments
+- High explanability 
+- At the end of every code cell, perform holisitic evaluation about functionality and success rate of the tasks for that code, if it is crossing our expectation or not
+- High Reliability with real world results not simulated ones!
+- No dependency conflict 
+- Remember what all I have 
+- Non Error Prone
+- If you feel that your tokens are getting exhausted and will end inappropriately, end at some point that is safe like checkpoint and tell me that you can type only till that point in 1 prompt, and you will need another prompt(of confirmation) to continue the remaining script. Try not to do this but it is okay since this is big project, it can happen.
+- Keep checkpointing throughout journey in a cell as well as to where we've reached so I know where we went wrong and how.
+- Return complete code fixes in all cases for a cell!
+- If I have to input anything into the code, flag me with multiple emotes.
+- I do not ever want simulated results, real world only!
+- Do not mention any comments. But do print some beautiful information about what happened in the code with emojis to make it appealing.
+- All errors must be printed with details and resolution strategies must be 5 Star.
+- Use CPU to maximum, but the memory must be kept in mind.
+- Also sometimes you get lost and waver from your task, focus on code generation with proper syntax and dont deviate and run the code, running is my task.
+- Keep in mind till now whatever codes were run and the current directory structure!
+- Single Cell of code not multiple.
+- Simple and basic functionality nothing complex, you should be 100% sure about the code.
